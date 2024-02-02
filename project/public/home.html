@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>홈 화면</title>
+
+    <!-- Firebase 스크립트 추가 -->
+    <script src="https://www.gstatic.com/firebasejs/9.5.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.5.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.5.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.5.0/firebase-storage-compat.js"></script>
+
+    <style>
+        /* 필요한 CSS 스타일링 추가 */
+        /* 예: */
+
+        img {
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -o-user-select: none;
+            user-select: none;
+        }
+
+        header {
+            background-color: #333;
+            overflow: hidden;
+        }
+
+        header a {
+            float: left;
+            display: block;
+            color: #f2f2f2;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+            font-size: 17px;
+        }
+
+        header a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+
+        header a.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        header #login,
+        header #logout,
+        header #mypage {
+            float: right;
+            display: block;
+            color: #f2f2f2;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+            font-size: 17px;
+        }
+
+        #post-view {
+            display: block;
+            /* 초기에는 보이도록 설정 */
+            margin-top: 20px;
+        }
+
+        #add-post-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            display: none;
+            /* 초기에는 숨김 */
+        }
+
+        #post-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .post-card {
+            width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .post-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .post-user {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .post-image {
+            width: 100%;
+            height: 150px;
+            background-size: cover;
+            background-position: center;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .post-content {
+            margin-top: 10px;
+        }
+
+        .like-button {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+            outline: none;
+        }
+
+        .like-button img {
+            width: 20px;
+            height: 20px;
+        }
+
+        .like-comment-count {
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+
+        .interaction-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .like-comment-icons {
+            display: flex;
+            align-items: center;
+        }
+
+
+        .like-comment-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+        }
+
+        /* 모달 스타일 */
+        .modal {
+            display: none;
+            /* 숨김 상태 */
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            position: relative;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .form-group button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .form-group button:hover {
+            background-color: #45a049;
+        }
+
+        .error-message {
+            color: red;
+            margin-top: 5px;
+        }
+
+        .like-comment-icon,
+        .board-image {
+            cursor: pointer;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -o-user-select: none;
+            user-select: none;
+        }
+
+        .board-image {
+            float: right;
+            margin-left: 10px;
+            /* 이미지와 내용 사이의 간격 조절 */
+        }
+
+        .Post-Settings {
+            padding: 10px 20px;
+            margin-bottom: 7px;
+            border: 0px solid #00000000;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #ffffff;
+        }
+
+        .basic {
+            color: #000;
+        }
+
+        .red {
+            color: #ff0000;
+        }
+
+        .modal-content {
+            border-radius: 7px;
+        }
+
+        #myModal-div {
+            display: flex;
+            flex-direction: column;
+            width: 400px;
+        }
+
+        .custom-file-label {
+            margin-top: 35px;
+            width: 98.7%;
+            padding: 8px;
+            height: 20px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .custom-file-label img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: cover;
+            /* 이미지를 비율 유지하며 채우도록 조정 */
+        }
+
+        #postImage {
+            display: none;
+            /* 기본 파일 입력 필드 숨김 */
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 메뉴바 -->
+    <header>
+        <a class="header-link" href="./home.html">홈</a>
+        <a class="header-link" href="./chat.html">채팅방</a>
+        <a id="mypage" href="./mypage.html">마이페이지</a>
+        <a id="logout" href="#" onclick="toggleLogin()">로그인</a>
+    </header>
+
+    <!-- 나머지 화면 내용 -->
+    <!-- 여기에 원하는 내용을 추가하세요 -->
+
+    <div id="post-view">
+        <button id="add-post-button" onclick="openAddPostModal()">+</button>
+        <div id="post-list"></div>
+    </div>
+
+    <!-- 게시물 추가 모달 -->
+    <div id="addPostModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddPostModal()">&times;</span>
+            <div class="form-group">
+                <label for="postImage" class="custom-file-label">
+                    <img src="../image/upload.png" alt="Select Image">
+                </label>
+                <!-- 여러 개의 파일을 선택할 수 있도록 multiple 속성 추가 -->
+                <input type="file" id="postImage" name="postImage" accept="image/*" multiple required>
+            </div>
+            <div class="form-group">
+                <label for="postTitle">제목:</label>
+                <input type="text" id="postTitle" name="postTitle" required>
+            </div>
+            <div class="form-group">
+                <label for="postContent">내용:</label>
+                <textarea id="postContent" name="postContent" required></textarea>
+            </div>
+            <button onclick="addPost()">게시물 추가</button>
+            <div id="errorMessage" class="error-message"></div>
+        </div>
+    </div>
+
+    <div id="myModal" class="modal setting">
+        <div class="modal-content" id="myModal-div">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <button class="Post-Settings basic" onclick="editPost()">수정하기</button>
+            <button class="Post-Settings red" onclick="deletePost()">삭제하기</button>
+            <button class="Post-Settings red" onclick="reportPost()">신고하기</button>
+            <!-- <button class="Post-Settings basic" onclick="closeModal()">취소</button> -->
+        </div>
+    </div>
+
+    <div id="postModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closePostModal()">&times;</span>
+
+            <!-- 게시물 제목과 게시자 정보 -->
+            <div class="post-details">
+                <div id="modalPostTitle" class="post-title"></div>
+                <div id="modalPostUser" class="post-user"></div>
+            </div>
+
+            <!-- 게시물 이미지 -->
+            <div id="modalPostImage" class="post-image"></div>
+
+            <!-- 좋아요, 댓글 이모지 및 갯수 -->
+            <div class="like-comment-icons">
+                <img src="../image/heart-no.png" alt="Like" class="like-comment-icon" onclick="toggleLikeModal()">
+                <img src="../image/message.png" alt="Comment" class="like-comment-icon" onclick="openCommentModal()">
+                <div id="modalLikeCount" class="like-comment-count"></div>
+            </div>
+
+            <!-- hr로 구역 나누기 -->
+            <hr>
+
+            <!-- 댓글 작성 폼 -->
+            <div class="comment-form">
+                <textarea id="commentContent" placeholder="댓글을 입력하세요"></textarea>
+                <button onclick="addComment()">댓글 추가</button>
+            </div>
+
+            <!-- 이전 댓글 목록 -->
+            <div id="modalPostComments"></div>
+        </div>
+    </div>
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyCWI27iYb6aoykBEQ9qSOGkPef-alNCruo",
+            authDomain: "code-3108c.firebaseapp.com",
+            databaseURL: "https://code-3108c.firebaseio.com",
+            projectId: "code-3108c",
+            storageBucket: "code-3108c.appspot.com",
+            messagingSenderId: "229428264935",
+            appId: "1:229428264935:web:816128e2484204c7538742",
+            measurementId: "G-D6ZPDTWRCB"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+
+        // Firebase 인증 및 Firestore 참조
+        var auth = firebase.auth();
+        var db = firebase.firestore();
+        var storage = firebase.storage();
+
+        // 좋아요 버튼 이미지 경로
+        var likeIconSrc = '../image/heart-no.png';         // 이미지1
+        var likedIconSrc = '../image/heart-yes.png';       // 이미지-2
+
+        // 로그인 상태 변경 감지, user.uid
+        auth.onAuthStateChanged(function (user) {
+            if (user) {
+                console.log("로그인된 사용자:", user.displayName);
+                document.getElementById('logout').textContent = '로그아웃';
+                document.getElementById('logout').href = '#'; // 로그인 상태에서는 클릭 시 로그아웃 함수 호출
+                document.getElementById('mypage').style.display = 'block'; // 마이페이지 링크 표시
+                document.getElementById('add-post-button').style.display = 'block'; // 게시물 추가 버튼 표시
+                // 게시물 목록 업데이트
+                updatePostList();
+            } else {
+                console.log("사용자 로그아웃됨");
+                document.getElementById('logout').textContent = '로그인';
+                document.getElementById('logout').href = 'login.html'; // 로그아웃 상태에서는 클릭 시 로그인 페이지로 이동
+                document.getElementById('mypage').style.display = 'none'; // 마이페이지 링크 숨김
+                document.getElementById('add-post-button').style.display = 'none'; // 게시물 추가 버튼 숨김
+            }
+        });
+
+        function editPost() {
+            // 수정하기 기능 구현
+            console.log('게시물 수정하기');
+        }
+
+        function deletePost() {
+            // 삭제하기 기능 구현
+            console.log('게시물 삭제하기');
+        }
+
+        function reportPost() {
+            // 신고하기 기능 구현
+            console.log('게시물 신고하기');
+        }
+
+        function openPostModal(postId) {
+            // 모달 열기 전에 모든 내용 초기화
+            resetModalContent();
+
+            // 선택한 게시물 정보 가져오기
+            var post = getPostById(postId);
+
+            // 모달에 게시물 정보 업데이트
+            updateModalContent(post);
+
+            // 모달에 댓글 정보 업데이트
+            updateModalComments(postId);
+
+            // 댓글 작성 폼 업데이트
+            updateCommentForm(postId);
+
+            // 모달 열기
+            postModal.show();
+        }
+
+        function resetModalContent() {
+            // 게시물 모달의 내용 초기화
+            var modalPostTitle = document.getElementById('modalPostTitle');
+            var modalPostUser = document.getElementById('modalPostUser');
+            var modalPostImage = document.getElementById('modalPostImage');
+            var modalLikeCount = document.getElementById('modalLikeCount');
+            var modalCommentTitle = document.getElementById('modalCommentTitle');
+
+            if (modalPostTitle) {
+                modalPostTitle.innerHTML = '';
+            }
+            if (modalPostUser) {
+                modalPostUser.innerHTML = '';
+            }
+            if (modalPostImage) {
+                modalPostImage.innerHTML = '';
+            }
+            if (modalLikeCount) {
+                modalLikeCount.innerHTML = '';
+            }
+            if (modalCommentTitle) {
+                modalCommentTitle.textContent = '댓글';
+            }
+
+            // 댓글 모달의 내용 초기화
+            var modalCommentList = document.getElementById('modalCommentList');
+            var modalCommentForm = document.getElementById('modalCommentForm');
+
+            if (modalCommentList) {
+                modalCommentList.innerHTML = '';
+            }
+            if (modalCommentForm) {
+                modalCommentForm.innerHTML = '';
+            }
+        }
+
+
+        function openPostModal(postId) {
+            var postRef = db.collection('posts').doc(postId);
+
+            postRef.get().then(function (doc) {
+                if (doc.exists) {
+                    var postData = doc.data();
+
+                    // 모달에 게시물 내용 추가
+                    document.getElementById('modalPostContent').textContent = postData.content;
+
+                    // 모달에 게시물 작성자 정보 추가
+                    document.getElementById('modalPostUser').textContent = 'by ' + postData.userName;
+
+                    // 댓글 불러오기
+                    loadComments(postId);
+
+                    // 댓글 입력 폼에 현재 열린 게시물의 ID 설정
+                    document.getElementById('commentContent').setAttribute('data-post-id', postId);
+                }
+            });
+
+            // 모달 창 열기
+            document.getElementById('postModal').style.display = 'block';
+        }
+
+        // 댓글 불러오기 함수
+        function loadComments(postId) {
+            var commentsContainer = document.getElementById('modalPostComments');
+            commentsContainer.innerHTML = ''; // 기존 댓글 초기화
+
+            // 해당 게시물의 댓글 가져오기
+            db.collection('comments').where('postId', '==', postId).get().then(function (querySnapshot) {
+                querySnapshot.forEach(function (commentDoc) {
+                    var commentData = commentDoc.data();
+
+                    // 댓글 엘리먼트 생성
+                    var commentElement = document.createElement('div');
+                    commentElement.textContent = commentData.content;
+
+                    // 댓글 목록에 추가
+                    commentsContainer.appendChild(commentElement);
+                });
+            });
+        }
+
+        // 댓글 추가 함수
+        function addComment() {
+            var commentContent = document.getElementById('commentContent').value;
+            var postId = document.getElementById('commentContent').getAttribute('data-post-id');
+
+            if (commentContent && postId) {
+                // 댓글 Firestore에 추가
+                db.collection('comments').add({
+                    content: commentContent,
+                    postId: postId,
+                    userName: auth.currentUser.displayName,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                }).then(function () {
+                    // 성공적으로 추가된 후에 댓글 목록 다시 불러오기
+                    loadComments(postId);
+
+                    // 입력 폼 초기화
+                    document.getElementById('commentContent').value = '';
+                }).catch(function (error) {
+                    console.error('댓글 추가 오류:', error);
+                });
+            }
+        }
+
+        // 모달 창 닫기 함수
+        function closePostModal() {
+            document.getElementById('postModal').style.display = 'none';
+        }
+
+
+
+
+
+
+
+
+
+
+
+        // 모달 창 열기 함수
+        function openModal() {
+            // 모달 엘리먼트 선택
+            var modal = document.getElementById('myModal'); // 모달 창의 실제 ID에 따라 수정이 필요
+
+            // 모달 창 보이도록 설정
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            var modal = document.getElementById('myModal');
+            modal.style.display = 'none';
+        }
+
+
+        // 게시물 추가 모달을 열기 위한 함수
+        function openAddPostModal() {
+            document.getElementById('addPostModal').style.display = 'block';
+        }
+
+        function toggleLogin() {
+            var user = auth.currentUser;
+
+            if (user) {
+                // 로그인된 경우 로그아웃 실행
+                auth.signOut().then(function () {
+                    console.log('로그아웃 성공');
+                }).catch(function (error) {
+                    console.error('로그아웃 오류:', error);
+                });
+            } else {
+                // 로그아웃된 경우 로그인 페이지로 이동
+                window.location.href = 'login.html';
+            }
+        }
+
+        // 게시물 추가 모달을 닫기 위한 함수
+        function closeAddPostModal() {
+            document.getElementById('addPostModal').style.display = 'none';
+        }
+
+        window.onclick = function (event) {
+            var addPostModal = document.getElementById('addPostModal');
+            var myModal = document.getElementById('myModal');
+            var postModal = document.getElementById('postModal'); // 추가된 부분
+
+            // 클릭한 엘리먼트가 addPostModal이고, 모달이 열려있는 상태라면 모달을 닫음
+            if (event.target === addPostModal && addPostModal.style.display === 'block') {
+                addPostModal.style.display = 'none';
+            }
+
+            // 클릭한 엘리먼트가 myModal이고, 모달이 열려있는 상태라면 모달을 닫음
+            if (event.target === myModal && myModal.style.display === 'block') {
+                myModal.style.display = 'none';
+            }
+
+            // 추가된 부분: 클릭한 엘리먼트가 postModal이고, 모달이 열려있는 상태라면 모달을 닫음
+            if (event.target === postModal && postModal.style.display === 'block') {
+                postModal.style.display = 'none';
+            }
+        };
+
+        // 게시물 추가 함수
+        function addPost() {
+            var postImageInput = document.getElementById('postImage');
+            var postTitleInput = document.getElementById('postTitle');
+            var postContentInput = document.getElementById('postContent');
+
+            // 여러 개의 파일을 담을 배열
+            var postImages = postImageInput.files;
+            var postTitle = postTitleInput.value;
+            var postContent = postContentInput.value;
+
+            // 모든 파일에 대해 처리
+            for (var i = 0; i < postImages.length; i++) {
+                var postImage = postImages[i];
+
+                if (postImage && postTitle && postContent) {
+                    // 이미지 파일을 Firebase Storage에 업로드
+                    var storageRef = storage.ref('post_images/' + postImage.name);
+                    var uploadTask = storageRef.put(postImage);
+
+                    uploadTask.on('state_changed', function (snapshot) {
+                        // 업로드 진행 상황 모니터링
+                    }, function (error) {
+                        // 업로드 중 오류 발생
+                        console.error('이미지 업로드 오류:', error);
+                    }, function () {
+                        // 업로드 성공 시 이미지 URL을 가져와서 Firestore에 저장
+                        uploadTask.snapshot.ref.getDownloadURL().then(function (downloadURL) {
+                            // 게시물 데이터 Firestore에 추가
+                            db.collection('posts').add({
+                                imageUrl: downloadURL,
+                                title: postTitle,
+                                content: postContent,
+                                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                                uid: auth.currentUser.uid,
+                                userName: auth.currentUser.displayName,
+                                likeCount: 0,  // 초기 좋아요 갯수는 0
+                                likedBy: []    // 좋아요를 누른 사용자 목록
+                            });
+
+                            // 입력창 초기화
+                            postTitleInput.value = '';
+                            postContentInput.value = '';
+                        });
+                    });
+                }
+            }
+
+            // 모달 닫기
+            closeAddPostModal();
+
+            // 게시물 목록 업데이트
+            updatePostList();
+        }
+
+        // 게시물 목록 업데이트 함수
+        function updatePostList() {
+            var postListElement = document.getElementById('post-list');
+
+            // 이전 게시물 삭제
+            postListElement.innerHTML = '';
+
+            // Firestore에서 게시물 가져오기
+            db.collection('posts').orderBy('timestamp', 'desc').get().then(function (querySnapshot) {
+                querySnapshot.forEach(function (doc) {
+                    var postData = doc.data();
+
+                    // 추가된 부분: 이미지 엘리먼트
+                    var boardImage = document.createElement('img');
+                    boardImage.src = '../image/dot3.png'; // 이미지 경로
+                    boardImage.alt = 'Board Image';
+                    boardImage.className = 'board-image';
+
+                    boardImage.addEventListener('click', function () {
+                        openModal();
+                    });
+
+                    // 게시물 카드 생성
+                    var postCard = document.createElement('div');
+                    postCard.className = 'post-card';
+
+                    // 이미지 엘리먼트 생성
+                    var imageElement = document.createElement('div');
+                    imageElement.style.backgroundImage = `url('${postData.imageUrl}')`;
+                    imageElement.className = 'post-image';
+
+                    // 추가된 부분: 게시물 제목과 사용자 이름
+                    var titleElement = document.createElement('div');
+                    titleElement.className = 'post-title';
+                    titleElement.textContent = postData.title;
+
+                    var userElement = document.createElement('div');
+                    userElement.className = 'post-user';
+                    userElement.textContent = 'by ' + postData.userName;
+
+                    // 좋아요 및 댓글 부분
+                    var interactionContainer = document.createElement('div');
+                    interactionContainer.className = 'interaction-container';
+
+                    var likeCommentIcons = document.createElement('div');
+                    likeCommentIcons.className = 'like-comment-icons';
+
+                    var likeIcon = document.createElement('img');
+                    likeIcon.src = likeIconSrc;
+                    likeIcon.alt = 'Like';
+                    likeIcon.className = 'like-comment-icon';
+                    likeIcon.addEventListener('click', function () {
+                        toggleLike(doc.id);
+                    });
+
+                    var commentIcon = document.createElement('img');
+                    commentIcon.src = '../image/message.png';  // 댓글 이미지 경로
+                    commentIcon.alt = 'Comment';
+                    commentIcon.className = 'like-comment-icon';
+
+                    commentIcon.addEventListener('click', function () {
+                        openPostModal(doc.id); // 해당 게시물의 ID를 인자로 전달
+                    });
+
+                    var likeCommentCount = document.createElement('div');
+                    likeCommentCount.className = 'like-comment-count';
+                    likeCommentCount.textContent = postData.likeCount + ' Likes';
+
+                    // 추가된 부분: 좋아요 상태에 따라 이미지 변경
+                    if (postData.likedBy.includes(auth.currentUser.uid)) {
+                        likeIcon.src = likedIconSrc;
+                    }
+
+                    // 내용 엘리먼트 생성
+                    var contentElement = document.createElement('p');
+                    contentElement.className = 'post-content';
+                    contentElement.textContent = postData.content;
+
+                    // 엘리먼트 조합
+                    likeCommentIcons.appendChild(likeIcon);
+                    likeCommentIcons.appendChild(commentIcon);
+                    interactionContainer.appendChild(likeCommentIcons);
+                    interactionContainer.appendChild(likeCommentCount);
+
+                    postCard.appendChild(boardImage);
+                    postCard.appendChild(titleElement);
+                    postCard.appendChild(userElement);
+                    postCard.appendChild(imageElement);
+                    postCard.appendChild(interactionContainer);
+                    postCard.appendChild(contentElement);
+
+                    // 전체 목록에 게시물 카드 추가
+                    postListElement.appendChild(postCard);
+                });
+            });
+        }
+
+        // 추가된 함수: 좋아요 토글 함수
+        var likeButtonEnabled = true;
+
+        // 수정된 toggleLike 함수
+        function toggleLike(postId) {
+            if (!likeButtonEnabled) {
+                // 버튼이 비활성화된 경우, 빠른 클릭을 방지
+                return;
+            }
+
+            likeButtonEnabled = false; // 클릭 비활성화
+
+            var postRef = db.collection('posts').doc(postId);
+
+            postRef.get().then(function (doc) {
+                if (doc.exists) {
+                    var postData = doc.data();
+                    var likedBy = postData.likedBy || [];
+
+                    // 이미 좋아요를 누른 상태인지 확인
+                    if (likedBy.includes(auth.currentUser.uid)) {
+                        // 이미 누른 경우, 좋아요 취소
+                        likedBy = likedBy.filter(uid => uid !== auth.currentUser.uid);
+                        postData.likeCount -= 1;
+                    } else {
+                        // 누르지 않은 경우, 좋아요 추가
+                        likedBy.push(auth.currentUser.uid);
+                        postData.likeCount += 1;
+                    }
+
+                    // 업데이트된 데이터 저장
+                    return postRef.update({
+                        likedBy: likedBy,
+                        likeCount: postData.likeCount
+                    });
+                }
+            }).then(function () {
+                // 성공적으로 업데이트된 후에 화면 갱신
+                updatePostList();
+            }).catch(function (error) {
+                console.error('좋아요 토글 오류:', error);
+            }).finally(function () {
+                likeButtonEnabled = true; // 클릭 활성화
+            });
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,44 @@
+npm install -g firebase-tools
+
+firebase login
+
+firebase init
+
+firebase serve
+
+var firebaseConfig = {
+    apiKey: "AIzaSyCWI27iYb6aoykBEQ9qSOGkPef-alNCruo",
+    authDomain: "code-3108c.firebaseapp.com",
+    projectId: "code-3108c",
+    storageBucket: "code-3108c.appspot.com",
+    messagingSenderId: "229428264935",
+    appId: "1:229428264935:web:816128e2484204c7538742",
+    measurementId: "G-D6ZPDTWRCB"
+
+
+   apiKey: "AIzaSyCWI27iYb6aoykBEQ9qSOGkPef-alNCruo",
+    authDomain: "code-3108c.firebaseapp.com",
+    databaseURL: "https://code-3108c.firebaseio.com",
+    projectId: "code-3108c",
+    storageBucket: "code-3108c.appspot.com",
+    messagingSenderId: "229428264935",
+    appId: "1:229428264935:web:816128e2484204c7538742",
+    measurementId: "G-D6ZPDTWRCB"
+
+
+
+
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    databaseURL: "https://code-3108c.firebaseio.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID",
+    measurementId: "YOUR_MEASUREMENT_ID"
+  };
+
+
+
+
+

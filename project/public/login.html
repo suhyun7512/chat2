@@ -1,0 +1,98 @@
+<!-- login.html -->
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>로그인</title>
+
+  <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCWI27iYb6aoykBEQ9qSOGkPef-alNCruo",
+      authDomain: "code-3108c.firebaseapp.com",
+      projectId: "code-3108c",
+      storageBucket: "code-3108c.appspot.com",
+      messagingSenderId: "229428264935",
+      appId: "1:229428264935:web:816128e2484204c7538742",
+      measurementId: "G-D6ZPDTWRCB"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    $(document).ready(() => {
+      // onAuthStateChanged(auth, (user) => {
+      //   if (user) {
+      //     // 추가된 부분: 이미 로그인된 상태에서는 자동으로 chat.html로 이동하지 않도록 처리
+      //     window.location.href = "chat.html";
+      //   } else {
+      //     console.log('User is signed out');
+      //   }
+      // });
+
+      // 로그인 버튼 클릭 시
+      $('.login-btn').on('click', function (event) {
+        event.preventDefault();
+        var 이메일 = $('#loginUsername').val();
+        var 패스워드 = $('#loginPassword').val();
+        signInWithEmailAndPassword(auth, 이메일, 패스워드)
+          .then((result) => {
+            console.log(result.user);
+            alert("로그인에 성공하였습니다.");
+            // 추가된 부분: 로그인 성공 시 chat.html로 이동
+            window.location.href = "./home.html";
+          })
+          .catch((error) => {
+            alert("로그인에 실패하였습니다.");
+          });
+      });
+    });
+  </script>
+  <script>
+    function myFunction() {
+      var x = document.getElementById("loginPassword");
+      if (x.type === "password") {
+        x.type = "text";
+      } else {
+        x.type = "password";
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <div class="login-div">
+    <div class="login-win">
+      <form id="loginForm">
+        <p class="login-h1">로그인</p>
+        <div class="input-box">
+          <input type="text" id="loginUsername" name="loginUsername" placeholder="이메일 입력" required>
+          <i class="bx bxs-user"></i>
+        </div>
+        <div class="input-box">
+          <input id="loginPassword" name="loginPassword" type="password" placeholder="비밀번호 입력" required>
+          <i onclick="myFunction()" class="bx bxs-lock-alt"></i>
+        </div>
+
+        <button type="button" class="login-btn">로그인 하기</button>
+        <div class="register-link">
+          <p>계정이 없으신가요? <a href="./join.html">등록하세요!</a></p>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+
+</html>

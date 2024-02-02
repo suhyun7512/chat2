@@ -1,0 +1,240 @@
+<!-- mypage.html -->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>마이페이지</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      background-color: #333;
+      padding: 15px;
+      text-align: center;
+    }
+
+    header a {
+      color: white;
+      text-decoration: none;
+      padding: 10px;
+      margin: 0 10px;
+      font-size: 18px;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .card {
+      flex: 0 1 300px;
+      margin: 10px;
+      padding: 20px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    p {
+      margin: 10px 0;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background-color: #4caf50;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    /* 모달 스타일 */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgb(0, 0, 0);
+      background-color: rgba(0, 0, 0, 0.4);
+      padding-top: 60px;
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      margin: 5% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+    }
+
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .close:hover,
+    .close:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    /* 입력 필드 스타일 */
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+  </style>
+  <!-- Firebase 스크립트 추가 -->
+  <script src="https://www.gstatic.com/firebasejs/9.5.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.5.0/firebase-auth-compat.js"></script>
+</head>
+
+<body>
+
+  <!-- 메뉴바 -->
+  <header>
+    <a href="home.html">홈</a>
+    <a href="mypage.html">마이페이지</a>
+    <a href="chat.html">채팅방</a>
+  </header>
+
+  <!-- 사용자 정보 표시 영역 -->
+  <div class="container">
+    <div class="card">
+      <h2>사용자 정보</h2>
+      <p><strong>사용자 이름:</strong> <span id="userName"></span></p>
+      <p><strong>이메일:</strong> <span id="userEmail"></span></p>
+      <p><strong>UID:</strong> <span id="userUid"></span></p>
+    </div>
+
+    <div class="card">
+      <button onclick="openModal()">비밀번호 변경</button>
+    </div>
+
+    <div class="card">
+      <button onclick="logout()">로그아웃</button>
+    </div>
+  </div>
+
+  <!-- 비밀번호 변경 모달 -->
+  <div id="myModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h2>비밀번호 변경</h2>
+      <input type="password" id="newPassword" placeholder="새로운 비밀번호">
+      <button onclick="changePassword()">변경</button>
+    </div>
+  </div>
+
+  <script>
+    // Firebase 구성 정보
+    var firebaseConfig = {
+      apiKey: "AIzaSyCWI27iYb6aoykBEQ9qSOGkPef-alNCruo",
+      authDomain: "code-3108c.firebaseapp.com",
+      projectId: "code-3108c",
+      storageBucket: "code-3108c.appspot.com",
+      messagingSenderId: "229428264935",
+      appId: "1:229428264935:web:816128e2484204c7538742",
+      measurementId: "G-D6ZPDTWRCB"
+    };
+
+    // Firebase 초기화
+    firebase.initializeApp(firebaseConfig);
+
+    // Firebase 인증 참조
+    var auth = firebase.auth();
+
+    // 로그인 상태 변경 감지
+    auth.onAuthStateChanged(function (user) {
+      if (user) {
+        console.log("로그인된 사용자:", user.displayName, user.email, user.uid);
+        // 사용자 정보 표시
+        document.getElementById('userName').textContent = user.displayName;
+        document.getElementById('userEmail').textContent = user.email;
+        document.getElementById('userUid').textContent = user.uid;
+      } else {
+        console.log("사용자 로그아웃됨");
+        // 로그인되지 않은 경우 로그인 페이지로 이동 또는 다른 조치를 취할 수 있습니다.
+        window.location.href = "login.html";
+      }
+    });
+
+    // 모달 열기
+    function openModal() {
+      document.getElementById('myModal').style.display = 'block';
+    }
+
+    // 모달 닫기
+    function closeModal() {
+      document.getElementById('myModal').style.display = 'none';
+    }
+
+    // 비밀번호 변경 함수
+    function changePassword() {
+      var newPassword = document.getElementById('newPassword').value;
+      var user = auth.currentUser;
+
+      // 사용자가 로그인한 경우에만 비밀번호 변경 가능
+      if (user) {
+        user.updatePassword(newPassword).then(function () {
+          console.log('비밀번호 변경 성공');
+          alert('비밀번호가 성공적으로 변경되었습니다.');
+          closeModal(); // 모달 닫기
+        }).catch(function (error) {
+          console.error('비밀번호 변경 오류:', error);
+          alert('비밀번호 변경 중 오류가 발생했습니다.');
+        });
+      } else {
+        console.log("사용자가 로그인하지 않음");
+        alert('로그인한 상태에서만 비밀번호를 변경할 수 있습니다.');
+      }
+    }
+
+    // 로그아웃 함수
+    function logout() {
+      auth.signOut().then(function () {
+        console.log('로그아웃 성공');
+        // 로그아웃 후 로그인 페이지로 이동 또는 다른 조치를 취할 수 있습니다.
+        window.location.href = "login.html";
+      }).catch(function (error) {
+        console.error('로그아웃 오류:', error);
+      });
+    }
+  </script>
+
+</body>
+
+</html>

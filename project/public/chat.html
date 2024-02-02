@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>채팅 앱</title>
+  <!-- Firebase 스크립트 추가 -->
+  <script src="https://www.gstatic.com/firebasejs/9.5.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.5.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.5.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    #chat-messages div {
+      margin-bottom: 8px;
+    }
+
+    #messageInput {
+      border: 1px solid #00000000;
+      width: 95%;
+      padding: 20px 0;
+      margin-top: 10px;
+      font-size: 24px;
+    }
+
+    header {
+      background-color: #333;
+      overflow: hidden;
+    }
+
+    header a {
+      float: left;
+      display: block;
+      color: #f2f2f2;
+      text-align: center;
+      padding: 14px 16px;
+      text-decoration: none;
+      font-size: 17px;
+    }
+
+    header a:hover {
+      background-color: #ddd;
+      color: black;
+    }
+
+    header a.active {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    header #logout {
+      float: right;
+      display: block;
+      color: #f2f2f2;
+      text-align: center;
+      padding: 14px 16px;
+      text-decoration: none;
+      font-size: 17px;
+    }
+
+    header #mypage {
+      float: left;
+      display: none;
+      /* 초기에는 숨겨져 있음 */
+      color: #f2f2f2;
+      text-align: center;
+      padding: 14px 16px;
+      text-decoration: none;
+      font-size: 17px;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 15px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    /* 버튼에 대한 호버 효과 */
+    button:hover {
+      background-color: #4546a0;
+    }
+
+    /* 채팅 입력창 스타일 추가 */
+    #messageInput {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin-top: 10px;
+      font-size: 18px;
+      border-radius: 5px;
+    }
+
+    /* 헤더에 마이페이지 링크 추가 */
+    #mypage {
+      float: left;
+      display: none;
+      /* 초기에는 숨겨져 있음 */
+      color: #f2f2f2;
+      text-align: center;
+      padding: 14px 16px;
+      text-decoration: none;
+      font-size: 17px;
+    }
+
+    #sendButton {
+      margin-left: 10px;
+      display: block;
+      white-space: nowrap;
+    }
+  </style>
+
+</head>
+
+<body>
+
+  <!-- 메뉴바 -->
+  <header>
+    <a class="header-link" href="./home.html">홈</a>
+    <a class="header-link" href="./chat.html">채팅방</a>
+    <a id="mypage" href="./mypage.html">마이페이지</a>
+    <a id="logout" href="#" onclick="toggleLogin()">로그인</a>
+  </header>
+
+  <!-- 채팅 내용을 표시할 영역 -->
+  <div id="chat-messages"
+    style="border: 1px solid #ccc; height: 85vh; overflow-y: scroll; width: 100%; overflow-y: scroll;"></div>
+
+  <!-- 채팅 입력창 -->
+  <div style="width: 99.5%; height: 55px; display: flex; margin-top: 10px;">
+    <input type="text" id="messageInput" placeholder="메시지 입력">
+    <button onclick="sendMessage()" id="sendButton">전송</button>
+  </div>
+
+  <script>
+    // Firebase 구성 정보
+    var firebaseConfig = {
+      apiKey: "AIzaSyCWI27iYb6aoykBEQ9qSOGkPef-alNCruo",
+      authDomain: "code-3108c.firebaseapp.com",
+      databaseURL: "https://code-3108c.firebaseio.com",
+      projectId: "code-3108c",
+      storageBucket: "code-3108c.appspot.com",
+      messagingSenderId: "229428264935",
+      appId: "1:229428264935:web:816128e2484204c7538742",
+      measurementId: "G-D6ZPDTWRCB"
+    };
+
+    // Firebase 초기화
+    firebase.initializeApp(firebaseConfig);
+
+    // Firebase 인증 및 Firestore 참조
+    var auth = firebase.auth();
+    var db = firebase.firestore();
+
+    // 로그인 상태 변경 감지
+    auth.onAuthStateChanged(function (user) {
+      if (user) {
+        console.log("로그인된 사용자:", user.displayName, user.uid);
+        document.getElementById('logout').textContent = '로그아웃';
+        document.getElementById('logout').href = '#'; // 로그인 상태에서는 클릭 시 로그아웃 함수 호출
+        document.getElementById('mypage').style.display = 'block'; // 마이페이지 링크 표시
+        // 채팅 메시지 처리
+        handleMessages(user);
+      } else {
+        console.log("사용자 로그아웃됨");
+        document.getElementById('logout').textContent = '로그인';
+        document.getElementById('logout').href = 'login.html'; // 로그아웃 상태에서는 클릭 시 로그인 페이지로 이동
+        document.getElementById('mypage').style.display = 'none'; // 마이페이지 링크 숨김
+      }
+    });
+
+    // 메시지 전송
+    function sendMessage() {
+      var messageInput = document.getElementById('messageInput');
+      var messageContent = messageInput.value.trim();
+
+      if (messageContent !== "") {
+        // 현재 사용자 가져오기
+        var currentUser = auth.currentUser;
+
+        // 사용자 이름 및 UID 가져오기
+        var userName = currentUser.displayName;
+        var uid = currentUser.uid;
+
+        // 채팅 메시지 Firestore에 추가
+        db.collection('chat').add({
+          content: messageContent,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          uid: uid,
+          userName: userName
+        });
+
+        // 메시지 입력창 초기화
+        messageInput.value = "";
+      }
+    }
+
+    // 채팅 메시지 처리
+    function handleMessages(user) {
+      var chatMessages = document.getElementById('chat-messages');
+      var chatCollectionRef = db.collection('chat');
+      var orderedQuery = chatCollectionRef.orderBy('timestamp', 'asc');
+
+      // Firestore 실시간 업데이트
+      var unsubscribe = orderedQuery.onSnapshot(function (querySnapshot) {
+        chatMessages.innerHTML = ""; // 이전 메시지 삭제
+
+        querySnapshot.forEach(function (doc) {
+          var messageData = doc.data();
+
+          // 이름과 내용을 분리하여 표시
+          var messageElement = document.createElement('div');
+          var nameElement = document.createElement('strong');
+          nameElement.textContent = `${messageData.userName}`;
+          messageElement.appendChild(nameElement);
+          messageElement.appendChild(document.createElement('br')); // <br> 추가
+          messageElement.appendChild(document.createTextNode(messageData.content.replace(':', ''))); // 콜론 제거
+
+          // UID 비교를 통한 스타일 적용
+          if (user.uid === messageData.uid) {
+            messageElement.style.textAlign = 'right';
+            messageElement.style.backgroundColor = '#cbe5fc'; // 로그인 사용자와 메시지 작성자가 동일한 경우
+          } else {
+            messageElement.style.textAlign = 'left';
+            messageElement.style.backgroundColor = '#ffffff'; // 로그인 사용자와 메시지 작성자가 다른 경우
+          }
+
+          chatMessages.appendChild(messageElement);
+        });
+
+        // 메시지 업데이트 후 맨 아래로 스크롤
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      });
+
+      // 페이지 이동 또는 어플리케이션 종료 시 실시간 업데이트 중단
+      window.addEventListener('beforeunload', function () {
+        unsubscribe();
+      });
+    }
+
+    // 로그인 및 로그아웃 토글 함수
+    function toggleLogin() {
+      var user = auth.currentUser;
+
+      if (user) {
+        // 로그인된 경우 로그아웃 실행
+        auth.signOut().then(function () {
+          console.log('로그아웃 성공');
+        }).catch(function (error) {
+          console.error('로그아웃 오류:', error);
+        });
+      } else {
+        // 로그아웃된 경우 로그인 페이지로 이동
+        window.location.href = 'login.html';
+      }
+    }
+  </script>
+
+</body>
+
+</html>
